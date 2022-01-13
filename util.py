@@ -15,6 +15,8 @@ from tensorflow import optimizers
 from msn69 import MSN
 # import psutil
 import sys
+from pathlib import Path
+
 
 os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 
@@ -25,7 +27,7 @@ _SAVER_MAX_TO_KEEP = 10
 _MOMENTUM = 0.9
 FRAME_HEIGHT = 112
 FRAME_WIDTH = 112
-BATCH = 24
+BATCH = 20
 NUM_RGB_CHANNELS = 3
 NUM_FRAMES = 16
 CHANNELS = 3
@@ -35,10 +37,14 @@ _SCOPE = {
 }
 
 directory = 'D:\\Depression\\MSN-master\\DEPRESSION_DATASET\\'
-
-dirl = ['cropImages/Training/Freeform/', 'cropImages/Training/Northwind/', 'cropImages/Development/Freeform/',
-        'cropImages/Development/Northwind/']
-
+train_dirl = ['images/train/']
+label_dirl = ['Frame_Labels/PSPI/']
+common_dirl = ['042-ll042/', '043-jh043/','047-jl047/','048-aa048/','049-bm049/',
+              '052-dr052/','059-fn059/','064-ak064/','066-mg066/','080-bn080/',
+              '092-ch092/','095-tv095/','096-bg096/','097-gf097/','101-mg101/',
+              '103-jk103/','106-nm106/','107-hs107/','108-th108/','109-ib109/',]
+test_dirl = ['images/test/115-jy115/', 'images/test/120-kz120/', 'images/test/121-vw121/', 'images/test/123-jh123/', 'images/test/124-dn124/']
+dirl = ['images/train/042-ll042/ll042t1aaaff/', 'images/test']
 dirLabels = [
     'Frame_Labels/PSPI/042-ll042/ll042t1aaaff']
 
@@ -73,15 +79,22 @@ def get_label_file(file_name):
 
 if __name__ == '__main__':
 
-    modality = np.random.randint(4, size=BATCH)  # 返回24个0-4的整数
+    modality = np.random.randint(20, size=BATCH)  # 返回24个0-4的整数
     usuario = np.random.randint(50, size=BATCH)  # 返回24个0-50的整数
     # BATCH = 24
     X = np.zeros((BATCH, NUM_FRAMES, 112, 112, 3))
     Y = []
     Y2 = []
+    images = []
     for i in range(BATCH):
-        users = os.listdir(directory + dirl[modality[i]])  # 训练文件夹四选一
-        images = get_img_file(directory+dirl[modality[i]]+users[0]+'/')
+        users = os.listdir(directory + dirl[0])  # 训练文件夹四选一
+        for p in Path(directory+train_dirl[0]+common_dirl[i]).iterdir():
+            for s in p.rglob('*.png'):
+                # yield s
+                images.append(s)
+
+        # print(images)
+        # images = get_img_file(directory+dirl[0]+'/')
         # print(images)
         numImages = len(images)
 
@@ -100,7 +113,7 @@ if __name__ == '__main__':
 
         for j in range(imagens, imagens + 128, 8):  # start,stop,step
             imagem = image.load_img(images[(j) % numImages], target_size=(112, 112))
-
+            # print(imagem)
             imagem = image.img_to_array(imagem)
             # here you put your function to subtract the mean of vggface2 dataset
             imga = utils.preprocess_input(imagem, version=2)  # subtract the mean of vggface dataset
@@ -116,20 +129,24 @@ if __name__ == '__main__':
                 X[i, indice, :, :, :] = imga
 
             indice = indice + 1
-            print(indice)
+        # labels = get_label_file(directory + train_dirl[0] + common_dirl[i])
+        #
+        # for l in range(len(labels)):
+        #     with open(labels[l], "r") as f:  # 打开文件
+        #         data = f.read()  # 读取文件
+        #         if float(data) != 0.0:
+        #             print(float(data))
+        for p in Path(directory + label_dirl[0] + common_dirl[i]).iterdir():
+            for s in p.rglob('*.txt'):
+                with open(s, "r") as f:  # 打开文件
+                    label = f.read()  # 读取文件
+                    Y.append(label)
         # sets = dirl[modality[i]].split('/')[1]
         # sets = 'Training'
         # # You can train the model using Training and Development sets
         # if sets == 'Training':
-            label = readCSV(dirLabels[0] + '/' + users[usuario[i]] + '_Depression.csv')
-        # else:
-        #     label = readCSV(dirLabels[1] + '/' + users[usuario[i]] + '_Depression.csv')
-        Y.append(label)
-    # label_dir = directory + dirLabels[0]
-    #
-    # labels = get_label_file(label_dir)
-    # for l in range(len(labels)):
-    #     with open(labels[l], "r") as f:  # 打开文件
-    #         data = f.read()  # 读取文件
-    #         if float(data) != 0.0 :
-    #             print(float(data))
+        # label = readCSV(dirLabels[0] + '/' + users[usuario[i]] + '_Depression.csv')
+        # # else:
+        # #     label = readCSV(dirLabels[1] + '/' + users[usuario[i]] + '_Depression.csv')
+        # Y.append(label)
+

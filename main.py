@@ -7,7 +7,7 @@ import random
 from keras.preprocessing import image
 import keras
 from keras import backend as K
-
+from pathlib import Path
 from keras.models import Model
 from keras_vggface import utils
 from keras.layers import Flatten,Dense,Input,Lambda,Dropout, Conv3D,Permute
@@ -25,7 +25,7 @@ _SAVER_MAX_TO_KEEP = 10
 _MOMENTUM = 0.9
 FRAME_HEIGHT = 112
 FRAME_WIDTH = 112
-BATCH = 24
+BATCH = 20
 NUM_RGB_CHANNELS = 3
 NUM_FRAMES = 16
 CHANNELS = 3
@@ -36,16 +36,22 @@ _SCOPE = {
 
 
 directory = 'D:\\Depression\\MSN-master\\DEPRESSION_DATASET\\'
+train_dirl = ['images/train/']
+label_dirl = ['Frame_Labels/PSPI/']
+train_common_dirl = ['042-ll042/', '043-jh043/','047-jl047/','048-aa048/','049-bm049/',
+              '052-dr052/','059-fn059/','064-ak064/','066-mg066/','080-bn080/',
+              '092-ch092/','095-tv095/','096-bg096/','097-gf097/','101-mg101/',
+              '103-jk103/','106-nm106/','107-hs107/','108-th108/','109-ib109/']
+test_common_dirl = ['115-jy115/', '120-kz120/', '121-vw121/', '123-jh123/', '124-dn124/']
+test_dirl = ['images/test']
+dirLabels = [
+    'Frame_Labels/PSPI/042-ll042/ll042t1aaaff']
 
-dirl = ['cropImages/Training/Freeform/','cropImages/Training/Northwind/','cropImages/Development/Freeform/','cropImages/Development/Northwind/']
+dirDevelopment = directory + 'cropImages/Development/'
+dirDev = ['Freeform/', 'Northwind/']
 
-dirLabels = ['/DEPRESSION_DATASET/Depression/AVEC2014/AVEC2014_DepressionLabels/AVEC2014_DepressionLabels/Training_DepressionLabels','/DEPRESSION_DATASET/Depression/AVEC2014/AVEC2014_DepressionLabels/AVEC2014_DepressionLabels/Development_DepressionLabels']
-
-dirDevelopment = directory+'cropImages/Development/'
-dirDev = ['Freeform/','Northwind/']
-
-dirTesting = directory+'cropImages/Testing/'
-dirTest = ['Freeform/','Northwind/']
+dirTesting = directory + 'cropImages/Testing/'
+dirTest = ['Freeform/', 'Northwind/']
 dirLabelsTest = '/DEPRESSION_DATASET/Depression/AVEC2014/AVEC2014_Labels_Testset/Testing/DepressionLabels/'
 
 
@@ -53,24 +59,31 @@ def val_generator():
 	while True:
 		X=np.zeros((BATCH,NUM_FRAMES,112,112,3))
 		Y=[]
-		
+		images = []
 		modality = np.random.randint(2,size=BATCH)
 		usuario = np.random.randint(50,size=BATCH)
 		for m in range(BATCH):
-			users=os.listdir(dirDevelopment+dirDev[modality[m]])
-			images=wsort(dirDevelopment+dirDev[modality[m]]+users[usuario[m]]+'/') #all the images
+			# users=os.listdir(dirDevelopment+dirDev[modality[m]])
+			for p in Path(directory + test_dirl[0] + test_common_dirl[m]).iterdir():
+				for s in p.rglob('*.png'):
+					# yield s
+					images.append(s)
 			numImages=len(images)
 
 			imagens = np.random.randint(numImages)
 			indice=0
 			for j in range(imagens,imagens+128,8):
-				imagem = image.load_img(dirDevelopment+dirDevelopment[modality[m]]+users[usuario[m]]+'/'+images[j%numImages],target_size=(112,112))
+				imagem = image.load_img(images[(j) % numImages], target_size=(112, 112))
 				imagem=image.img_to_array(imagem)
 				# here you put your function to subtract the mean of vggface2 dataset
 				imga = utils.preprocess_input(imagem,version=2) #subtract the mean of vggface dataset
 				X[m,indice,:,:,:]=imga
 				indice=indice+1
-			label = readCSV(dirLabels+users[usuario[m]]+'_Depression.csv')
+			for p in Path(directory + label_dirl[0] + test_common_dirl[m]).iterdir():
+				for s in p.rglob('*.txt'):
+					with open(s, "r") as f:  # 打开文件
+						label = f.read()  # 读取文件
+						Y.append(float(label))
 			Y.append(label)
 			
 		Y=np.array(Y)
@@ -91,15 +104,24 @@ def get_img_file(file_name):
 #一次生成batch大小的数据
 def generator():
 	while True:
-		modality = np.random.randint(4,size=BATCH)#返回24个0-4的整数
-		usuario = np.random.randint(50,size=BATCH)#返回24个0-50的整数
-		#BATCH = 24
-		X = np.zeros((BATCH,NUM_FRAMES,112,112,3))
+
+		modality = np.random.randint(20, size=BATCH)  # 返回24个0-4的整数
+		usuario = np.random.randint(50, size=BATCH)  # 返回24个0-50的整数
+		# BATCH = 24
+		X = np.zeros((BATCH, NUM_FRAMES, 112, 112, 3))
 		Y = []
-		Y2=[]
+		Y2 = []
+		images = []
 		for i in range(BATCH):
-			users = os.listdir(directory+dirl[modality[i]])#训练文件夹四选一
-			images = get_img_file(directory+dirl[modality[i]]+users[0]+'/')
+			# users = os.listdir(directory + dirl[0])  # 训练文件夹四选一
+			for p in Path(directory + train_dirl[0] + train_common_dirl[i]).iterdir():
+				for s in p.rglob('*.png'):
+					# yield s
+					images.append(s)
+
+			# print(images)
+			# images = get_img_file(directory+dirl[0]+'/')
+			# print(images)
 			numImages = len(images)
 
 			imagens = np.random.randint(numImages)
@@ -115,32 +137,45 @@ def generator():
 			else:
 				flagFlip = 4
 
-				
-			for j in range(imagens,imagens+128,8):  #start,stop,step
-				imagem=image.load_img(images[(j)%numImages],target_size=(112,112))
+			for j in range(imagens, imagens + 128, 8):  # start,stop,step
+				imagem = image.load_img(images[(j) % numImages], target_size=(112, 112))
+				# print(imagem)
 				imagem = image.img_to_array(imagem)
 				# here you put your function to subtract the mean of vggface2 dataset
-				imga = utils.preprocess_input(imagem,version=2) #subtract the mean of vggface dataset
-				
-				if flagFlip == 1:
-					X[i,indice,:,:,:] = np.flip(imga,axis=1)
-				elif flagFlip == 2:
-					X[i,indice,:,:,:] = image.apply_affine_transform(imga,theta=30, channel_axis=2, fill_mode='nearest',cval=0.,order=1)
-				elif flagFlip == 3:
-					X[i,indice,:,:,:] = np.flip(imga,axis=0)
-				else:
-					X[i,indice,:,:,:]=imga
+				imga = utils.preprocess_input(imagem, version=2)  # subtract the mean of vggface dataset
 
-				indice = indice+1
-			sets = dirl[modality[i]].split('/')[1]
-			# You can train the model using Training and Development sets
-			if sets == 'Training':
-				label = readCSV(dirLabels[0]+'/'+users[usuario[i]]+'_Depression.csv')
-			else:
-				label = readCSV(dirLabels[1]+'/'+users[usuario[i]]+'_Depression.csv')
-			Y.append(label)
-			
-		
+				if flagFlip == 1:
+					X[i, indice, :, :, :] = np.flip(imga, axis=1)
+				elif flagFlip == 2:
+					X[i, indice, :, :, :] = image.apply_affine_transform(imga, theta=30, channel_axis=2,
+																		 fill_mode='nearest', cval=0., order=1)
+				elif flagFlip == 3:
+					X[i, indice, :, :, :] = np.flip(imga, axis=0)
+				else:
+					X[i, indice, :, :, :] = imga
+
+				indice = indice + 1
+			# labels = get_label_file(directory + train_dirl[0] + common_dirl[i])
+			#
+			# for l in range(len(labels)):
+			#     with open(labels[l], "r") as f:  # 打开文件
+			#         data = f.read()  # 读取文件
+			#         if float(data) != 0.0:
+			#             print(float(data))
+			for p in Path(directory + label_dirl[0] + train_common_dirl[i]).iterdir():
+				for s in p.rglob('*.txt'):
+					with open(s, "r") as f:  # 打开文件
+						label = f.read()  # 读取文件
+						Y.append(float(label))
+		# sets = dirl[modality[i]].split('/')[1]
+		# sets = 'Training'
+		# # You can train the model using Training and Development sets
+		# if sets == 'Training':
+		# label = readCSV(dirLabels[0] + '/' + users[usuario[i]] + '_Depression.csv')
+		# # else:
+		# #     label = readCSV(dirLabels[1] + '/' + users[usuario[i]] + '_Depression.csv')
+		# Y.append(label)
+
 		Y=np.array(Y)
 		
 		yield X,Y
@@ -168,7 +203,7 @@ if __name__ == '__main__':
 	custom_vgg_model = Model(rgb_model.input,out)
 	adam = optimizers.Adam(lr=0.0001, decay=0.0005)
 	custom_vgg_model.compile(loss='mse',optimizer=adam)
-	custom_vgg_model.fit(generator(),steps_per_epoch=1000,validation_data=val_generator(),validation_steps=10,epochs=2)
+	custom_vgg_model.fit(generator(),steps_per_epoch=1000,validation_data=val_generator(),validation_steps=10,epochs=2,verbose=1)
 	#batch_size = 数据集大小/steps_per_epoch
 	#--Here you read the label
 
