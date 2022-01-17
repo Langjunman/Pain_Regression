@@ -83,64 +83,68 @@ if __name__ == '__main__':
     usuario = np.random.randint(50, size=BATCH)  # 返回24个0-50的整数
     # BATCH = 24
     X = np.zeros((BATCH, NUM_FRAMES, 112, 112, 3))
-    Y = []
+
     Y2 = []
     images = []
     for i in range(BATCH):
-        users = os.listdir(directory + dirl[0])  # 训练文件夹四选一
-        for p in Path(directory+train_dirl[0]+common_dirl[i]).iterdir():
+        users = os.listdir(directory + dirl[0])
+        for p in Path(directory).iterdir():
             for s in p.rglob('*.png'):
                 # yield s
                 images.append(s)
-
-        # print(images)
-        # images = get_img_file(directory+dirl[0]+'/')
-        # print(images)
-        numImages = len(images)
-
-        imagens = np.random.randint(numImages)
-        indice = 0
-
-        valor = np.random.random()
-        if valor < 0.25:
-            flagFlip = 1
-        elif valor < 0.50 and valor >= 0.25:
-            flagFlip = 2
-        elif valor < 0.75 and valor >= 0.50:
-            flagFlip = 3
-        else:
-            flagFlip = 4
-
-        for j in range(imagens, imagens + 128, 8):  # start,stop,step
-            imagem = image.load_img(images[(j) % numImages], target_size=(112, 112))
-            # print(imagem)
-            imagem = image.img_to_array(imagem)
-            # here you put your function to subtract the mean of vggface2 dataset
-            imga = utils.preprocess_input(imagem, version=2)  # subtract the mean of vggface dataset
-
-            if flagFlip == 1:
-                X[i, indice, :, :, :] = np.flip(imga, axis=1)
-            elif flagFlip == 2:
-                X[i, indice, :, :, :] = image.apply_affine_transform(imga, theta=30, channel_axis=2,
-                                                                     fill_mode='nearest', cval=0., order=1)
-            elif flagFlip == 3:
-                X[i, indice, :, :, :] = np.flip(imga, axis=0)
-            else:
-                X[i, indice, :, :, :] = imga
-
-            indice = indice + 1
-        # labels = get_label_file(directory + train_dirl[0] + common_dirl[i])
+        print(images)
+        # Y = []
+        # # print(images)
+        # # images = get_img_file(directory+dirl[0]+'/')
+        # # print(images)
+        # numImages = len(images)
         #
-        # for l in range(len(labels)):
-        #     with open(labels[l], "r") as f:  # 打开文件
-        #         data = f.read()  # 读取文件
-        #         if float(data) != 0.0:
-        #             print(float(data))
-        for p in Path(directory + label_dirl[0] + common_dirl[i]).iterdir():
-            for s in p.rglob('*.txt'):
-                with open(s, "r") as f:  # 打开文件
-                    label = f.read()  # 读取文件
-                    Y.append(label)
+        # imagens = np.random.randint(numImages)
+        # indice = 0
+        #
+        # valor = np.random.random()
+        # if valor < 0.25:
+        #     flagFlip = 1
+        # elif valor < 0.50 and valor >= 0.25:
+        #     flagFlip = 2
+        # elif valor < 0.75 and valor >= 0.50:
+        #     flagFlip = 3
+        # else:
+        #     flagFlip = 4
+        #
+        # for j in range(imagens, imagens + 128, 8):  # start,stop,step
+        #     imagem = image.load_img(images[(j) % numImages], target_size=(112, 112))
+        #     # print(imagem)
+        #     imagem = image.img_to_array(imagem)
+        #     # here you put your function to subtract the mean of vggface2 dataset
+        #     imga = utils.preprocess_input(imagem, version=2)  # subtract the mean of vggface dataset
+        #
+        #     if flagFlip == 1:
+        #         X[i, indice, :, :, :] = np.flip(imga, axis=1)
+        #     elif flagFlip == 2:
+        #         X[i, indice, :, :, :] = image.apply_affine_transform(imga, theta=30, channel_axis=2,
+        #                                                              fill_mode='nearest', cval=0., order=1)
+        #     elif flagFlip == 3:
+        #         X[i, indice, :, :, :] = np.flip(imga, axis=0)
+        #     else:
+        #         X[i, indice, :, :, :] = imga
+        #
+        #     indice = indice + 1
+        # # labels = get_label_file(directory + train_dirl[0] + common_dirl[i])
+        # #
+        # # for l in range(len(labels)):
+        # #     with open(labels[l], "r") as f:  # 打开文件
+        # #         data = f.read()  # 读取文件
+        # #         if float(data) != 0.0:
+        # #             print(float(data))
+        # for p in Path(directory + label_dirl[0] + common_dirl[i]).iterdir():
+        #     for s in p.rglob('*.txt'):
+        #         for i in range(20):
+        #             with open(s, "r") as f:  # 打开文件
+        #                 label = f.read()  # 读取文件
+        #                 Y.append(float(label))
+        #
+        # print(len(Y))
         # sets = dirl[modality[i]].split('/')[1]
         # sets = 'Training'
         # # You can train the model using Training and Development sets
