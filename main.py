@@ -35,15 +35,16 @@ _SCOPE = {
 }
 
 
-directory = 'D:\\Depression\\MSN-master\\DEPRESSION_DATASET\\'
-train_dirl = ['images/train/']
+directory = 'D:\\Depression\\processed_images\\'
+label_dir20220117 = 'D:\\Depression\\labels\\'
+train_dirl = ['train/']
 label_dirl = ['Frame_Labels/PSPI/']
 train_common_dirl = ['042-ll042/', '043-jh043/','047-jl047/','048-aa048/','049-bm049/',
               '052-dr052/','059-fn059/','064-ak064/','066-mg066/','080-bn080/',
               '092-ch092/','095-tv095/','096-bg096/','097-gf097/','101-mg101/',
               '103-jk103/','106-nm106/','107-hs107/','108-th108/','109-ib109/']
 test_common_dirl = ['115-jy115/', '120-kz120/', '121-vw121/', '123-jh123/', '124-dn124/']
-test_dirl = ['images/test']
+test_dirl = ['test']
 dirLabels = [
     'Frame_Labels/PSPI/042-ll042/ll042t1aaaff']
 
@@ -58,7 +59,7 @@ dirLabelsTest = '/DEPRESSION_DATASET/Depression/AVEC2014/AVEC2014_Labels_Testset
 def val_generator():
 	while True:
 		X=np.zeros((BATCH,NUM_FRAMES,112,112,3))
-		Y=[]
+		Y=[0,1,2,3,4,5,6,7,5,4,3,2,1,5,2,0,1,2,1,0]
 		images = []
 		modality = np.random.randint(2,size=BATCH)
 		usuario = np.random.randint(50,size=BATCH)
@@ -79,14 +80,14 @@ def val_generator():
 				imga = utils.preprocess_input(imagem,version=2) #subtract the mean of vggface dataset
 				X[m,indice,:,:,:]=imga
 				indice=indice+1
-			for p in Path(directory + label_dirl[0] + test_common_dirl[m]).iterdir():
-				for s in p.rglob('*.txt'):
-					with open(s, "r") as f:  # 打开文件
-						label = f.read()  # 读取文件
-						Y.append(float(label))
-			Y.append(label)
-			
-		Y=np.array(Y)
+		# 	for p in Path(directory + label_dirl[0] + test_common_dirl[m]).iterdir():
+		# 		for s in p.rglob('*.txt'):
+		# 			with open(s, "r") as f:  # 打开文件
+		# 				label = f.read()  # 读取文件
+		# 				Y.append(float(label))
+		# 	Y.append(label)
+		#
+		# Y=np.array(Y)
 		yield X,Y
 
 def is_image_file(filename):
@@ -109,7 +110,8 @@ def generator():
 		usuario = np.random.randint(50, size=BATCH)  # 返回24个0-50的整数
 		# BATCH = 24
 		X = np.zeros((BATCH, NUM_FRAMES, 112, 112, 3))
-		Y = []
+
+
 		Y2 = []
 		images = []
 		for i in range(BATCH):
@@ -118,7 +120,7 @@ def generator():
 				for s in p.rglob('*.png'):
 					# yield s
 					images.append(s)
-
+			# Y = []
 			# print(images)
 			# images = get_img_file(directory+dirl[0]+'/')
 			# print(images)
@@ -136,10 +138,15 @@ def generator():
 				flagFlip = 3
 			else:
 				flagFlip = 4
-
+			Y = []
 			for j in range(imagens, imagens + 128, 8):  # start,stop,step
 				imagem = image.load_img(images[(j) % numImages], target_size=(112, 112))
-				# print(imagem)
+				# print(images[(j) % numImages])
+				strdir1, strdir2, strdir3, subdir = str(images[(j) % numImages]).split('\\', 3)
+				label_file = label_dir20220117+subdir[:-4]+'_facs.txt'
+				with open(label_file, "r") as f:  # 打开文件
+					label = f.read()  # 读取文件
+					Y.append(float(label))
 				imagem = image.img_to_array(imagem)
 				# here you put your function to subtract the mean of vggface2 dataset
 				imga = utils.preprocess_input(imagem, version=2)  # subtract the mean of vggface dataset
@@ -162,11 +169,14 @@ def generator():
 			#         data = f.read()  # 读取文件
 			#         if float(data) != 0.0:
 			#             print(float(data))
-			for p in Path(directory + label_dirl[0] + train_common_dirl[i]).iterdir():
-				for s in p.rglob('*.txt'):
-					with open(s, "r") as f:  # 打开文件
-						label = f.read()  # 读取文件
-						Y.append(float(label))
+
+
+			# for p in Path(directory + label_dirl[0] + train_common_dirl[i]).iterdir():
+			# 	for s in p.rglob('*.txt'):
+			# 		for i in range(20):
+			# 			with open(s, "r") as f:  # 打开文件
+			# 				label = f.read()  # 读取文件
+			# 				Y.append(float(label))
 		# sets = dirl[modality[i]].split('/')[1]
 		# sets = 'Training'
 		# # You can train the model using Training and Development sets
@@ -175,7 +185,7 @@ def generator():
 		# # else:
 		# #     label = readCSV(dirLabels[1] + '/' + users[usuario[i]] + '_Depression.csv')
 		# Y.append(label)
-
+		print(Y)
 		Y=np.array(Y)
 		
 		yield X,Y
@@ -203,7 +213,7 @@ if __name__ == '__main__':
 	custom_vgg_model = Model(rgb_model.input,out)
 	adam = optimizers.Adam(lr=0.0001, decay=0.0005)
 	custom_vgg_model.compile(loss='mse',optimizer=adam)
-	custom_vgg_model.fit(generator(),steps_per_epoch=1000,validation_data=val_generator(),validation_steps=10,epochs=2,verbose=1)
+	custom_vgg_model.fit(generator(),steps_per_epoch=50,validation_data=val_generator(),validation_steps=10,epochs=5,verbose=1)
 	#batch_size = 数据集大小/steps_per_epoch
 	#--Here you read the label
 

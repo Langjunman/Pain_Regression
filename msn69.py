@@ -40,7 +40,7 @@ def conv3d_bn(x,filters,num_frames,num_row,num_col,padding='same',strides=(1,1,1
 	return x
 
 
-def MSN(include_top=True,weights=None,input_tensor=None,input_shape=None,dropout_prob=0.0,endpoint_logit=True,classes=8631):
+def MSN(include_top=True,weights=None,input_tensor=None,input_shape=None,dropout_prob=0.0,endpoint_logit=True,classes=17):
 	
 	if input_tensor is None:
 		img_input = Input(shape=input_shape)
